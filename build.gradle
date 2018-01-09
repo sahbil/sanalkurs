@@ -1,14 +1,80 @@
-group 'net.sanalkurs'
-version '1.0-SNAPSHOT'
-
-apply plugin: 'java'
-
-sourceCompatibility = 1.8
-
-repositories {
-    mavenCentral()
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:${spring_boot_version}"
+        classpath "io.spring.gradle:dependency-management-plugin:${spring_dependency_management}"
+        classpath "com.moowork.gradle:gradle-node-plugin:1.2.0"
+    }
 }
 
-dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+allprojects {
+    group 'net.sanalkurs'
+    version '1.0-SNAPSHOT'
+}
+
+// Check if the sub project is Java
+def javaProject() {
+    subprojects.findAll {
+        project -> project.name != 'spa'
+    }
+}
+
+// Common configuration for all Java projects
+configure(javaProject()) {
+    repositories {
+        mavenCentral()
+        jcenter()
+        maven { url "http://maven.restlet.org" }
+    }
+
+    apply plugin: 'java'
+    apply plugin: 'idea'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    configurations {
+        all*.exclude module: 'spring-boot-starter-logging'
+    }
+
+    dependencies {
+        // Log
+        compile 'org.springframework.boot:spring-boot-starter-log4j2'
+        compile "com.google.guava:guava:${google_common}"
+        // TEST
+        testCompile('org.springframework.boot:spring-boot-starter-test')
+    }
+
+    idea {
+        module {
+            inheritOutputDirs = false
+            outputDir = file("$buildDir/classes/main/")
+        }
+    }
+
+    sourceSets {
+        main {
+            java.srcDir file('src/main/java')
+            resources.srcDir file('src/main/resources')
+        }
+        test {
+            java.srcDir file('src/test/java')
+            resources.srcDir file('src/test/resources')
+        }
+    }
+
+    task wrapper(type: Wrapper) { gradleVersion = '4.4.1' }
+
+    bootRun {
+        // Ensures IntelliJ can load resource files
+        addResources = false
+    }
 }
